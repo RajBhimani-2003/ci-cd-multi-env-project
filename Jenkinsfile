@@ -7,12 +7,6 @@ pipeline {
 
     stages {
 
-        stage('Checkout Code') {
-            steps {
-                git branch: "${env.BRANCH_NAME}", url: 'https://github.com/RajBhimani-2003/ci-cd-multi-env-project.git'
-            }
-        }
-
         stage('Install Dependencies') {
             steps {
                 sh 'npm install'
