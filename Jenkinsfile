@@ -1,5 +1,9 @@
 pipeline {
-    agent any
+    agent {
+    docker {
+        image 'node:18-alpine'
+    }
+}
 
     environment {
         DOCKER_IMAGE = "rajbhimani18/ci-cd-multi-env-project"
