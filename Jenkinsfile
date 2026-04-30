@@ -30,7 +30,13 @@ pipeline {
             steps {
                 script {
                     docker.image('node:18-alpine').inside {
-                        sh 'npm test || echo "No tests found, skipping..."'
+                        sh '''
+                        if [ -f test/app.test.js ]; then
+                            npm test
+                        else
+                            echo "No test files found, skipping..."
+                        fi
+                        '''
                     }
                 }
             }
@@ -44,10 +50,15 @@ pipeline {
 
         stage('Login to DockerHub') {
             steps {
-                withCredentials([string(credentialsId: 'docker', variable: 'DOCKER_PASS')]) {
-            sh '''
-            echo $DOCKER_PASS | docker login -u rajbhimani18 --password-stdin
-            '''
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh '''
+                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                    '''
+                }
             }
         }
 
@@ -92,5 +103,4 @@ pipeline {
             echo "Pipeline failed!"
         }
     }
-}
 }
