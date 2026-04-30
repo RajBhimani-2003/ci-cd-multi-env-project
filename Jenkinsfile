@@ -51,29 +51,27 @@ pipeline {
         }
 
         stage('Deploy to DEV') {
-            when {
-                branch 'dev'
-            }
-            steps {
-                sh '''
-                docker stop dev-app || true
-                docker rm dev-app || true
-                docker run -d -p 3001:3000 --name dev-app $IMAGE_NAME:latest
-                '''
-            }
-        }
+    when {
+        branch 'dev'
+    }
+    steps {
+        sh '''
+        docker rm -f dev-container || true
+        docker run -d -p 3001:3000 --name dev-container rajbhimani18/ci-cd-multi-env-project:latest
+        '''
+    }
+}
 
-        stage('Deploy to PROD') {
-            when {
-                branch 'main'
-            }
-            steps {
-                sh '''
-                docker stop prod-app || true
-                docker rm prod-app || true
-                docker run -d -p 3002:3000 --name prod-app $IMAGE_NAME:latest
-                '''
-            }
-        }
+stage('Deploy to PROD') {
+    when {
+        branch 'main'
+    }
+    steps {
+        sh '''
+        docker rm -f prod-container || true
+        docker run -d -p 3002:3000 --name prod-container rajbhimani18/ci-cd-multi-env-project:latest
+        '''
+    }
+}
     }
 }
