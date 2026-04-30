@@ -1,45 +1,49 @@
 pipeline {
-    agent {
-        docker {
-            image 'node:18-alpine'
-        }
-    }
+    agent any
 
     environment {
-        DOCKER_IMAGE = "rajbhimani18/ci-cd-multi-env-project"
+        IMAGE_NAME = "rajbhimani18/ci-cd-multi-env-project"
     }
 
     stages {
 
         stage('Install Dependencies') {
             steps {
-                sh 'npm install'
+                script {
+                    docker.image('node:18-alpine').inside {
+                        sh 'npm install'
+                    }
+                }
             }
         }
 
         stage('Run Tests') {
             steps {
-                sh 'echo "Skipping tests"'
+                script {
+                    docker.image('node:18-alpine').inside {
+                        sh 'echo "Skipping tests"'
+                    }
+                }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $DOCKER_IMAGE:$BUILD_NUMBER .'
+                sh 'docker build -t $IMAGE_NAME:latest .'
             }
         }
 
         stage('Login to DockerHub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    sh 'echo $PASS | docker login -u $USER --password-stdin'
+                withCredentials([string(credentialsId: 'dockerhub', variable: 'DOCKER_PASS')]) {
+                    sh 'echo $DOCKER_PASS | docker login -u rajbhimani18 --password-stdin'
                 }
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                sh 'docker push $DOCKER_IMAGE:$BUILD_NUMBER'
+                sh 'docker push $IMAGE_NAME:latest'
             }
         }
 
@@ -49,9 +53,9 @@ pipeline {
             }
             steps {
                 sh '''
-                docker stop dev-container || true
-                docker rm dev-container || true
-                docker run -d -p 3001:3000 --name dev-container -e NODE_ENV=dev $DOCKER_IMAGE:$BUILD_NUMBER
+                docker stop dev-app || true
+                docker rm dev-app || true
+                docker run -d -p 3001:3000 --name dev-app $IMAGE_NAME:latest
                 '''
             }
         }
@@ -61,23 +65,12 @@ pipeline {
                 branch 'main'
             }
             steps {
-                input message: "Deploy to Production?"
-
                 sh '''
-                docker stop prod-container || true
-                docker rm prod-container || true
-                docker run -d -p 3000:3000 --name prod-container -e NODE_ENV=production $DOCKER_IMAGE:$BUILD_NUMBER
+                docker stop prod-app || true
+                docker rm prod-app || true
+                docker run -d -p 3002:3000 --name prod-app $IMAGE_NAME:latest
                 '''
             }
-        }
-    }
-
-    post {
-        success {
-            echo "✅ Pipeline Success"
-        }
-        failure {
-            echo "❌ Pipeline Failed"
         }
     }
 }
