@@ -2,17 +2,14 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "rajbhimani18/ci-cd-multi-env-project"
-        DOCKER_TAG = "latest"
-        CONTAINER_NAME = "ci-cd-app"
+        IMAGE_NAME = "rajbhimani18/ci-cd-multi-env-project"
     }
 
     stages {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'dev',
-                url: 'https://github.com/RajBhimani-2003/ci-cd-multi-env-project.git'
+                git branch: 'dev', url: 'https://github.com/RajBhimani-2003/ci-cd-multi-env-project.git'
             }
         }
 
@@ -44,14 +41,14 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $DOCKER_IMAGE:$DOCKER_TAG .'
+                sh 'docker build -t $IMAGE_NAME:latest .'
             }
         }
 
         stage('Login to DockerHub') {
             steps {
                 withCredentials([usernamePassword(
-                    credentialsId: 'docker',
+                    credentialsId: 'docker-pass',
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
@@ -64,7 +61,7 @@ pipeline {
 
         stage('Push Docker Image') {
             steps {
-                sh 'docker push $DOCKER_IMAGE:$DOCKER_TAG'
+                sh 'docker push $IMAGE_NAME:latest'
             }
         }
 
@@ -74,9 +71,7 @@ pipeline {
             }
             steps {
                 sh '''
-                docker stop $CONTAINER_NAME || true
-                docker rm $CONTAINER_NAME || true
-                docker run -d -p 3000:3000 --name $CONTAINER_NAME $DOCKER_IMAGE:$DOCKER_TAG
+                echo "Deploying to DEV environment..."
                 '''
             }
         }
@@ -87,9 +82,7 @@ pipeline {
             }
             steps {
                 sh '''
-                docker stop $CONTAINER_NAME || true
-                docker rm $CONTAINER_NAME || true
-                docker run -d -p 80:3000 --name $CONTAINER_NAME $DOCKER_IMAGE:$DOCKER_TAG
+                echo "Deploying to PROD environment..."
                 '''
             }
         }
@@ -97,10 +90,10 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline executed successfully!"
+            echo 'Pipeline executed successfully!'
         }
         failure {
-            echo "Pipeline failed!"
+            echo 'Pipeline failed!'
         }
     }
 }
